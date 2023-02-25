@@ -1,0 +1,39 @@
+```{r}
+library(fgsea)
+library(tidyverse)
+library(msigdbr)
+library(GSEABase)
+library(dplyr)
+library(conflicted)
+conflicted::conflicts_prefer(dplyr::select)
+```
+
+```{r}
+setwd("C:\\Users\\Emma Li\\Documents\\pcr.analysis")
+survival <- ("survival_meta_analysis.csv")
+
+survival.data <- read.csv(survival)
+View(survival.data)
+
+survival.rank <- survival.data %>% 
+  select(Symbol, zval.random, pVal.random) %>% 
+  deframe()
+
+C2CP <- msigdbr(species = "Homo sapiens", category = "C2", subcategory = "CP")
+C2CP_list = split(x = C2CP$gene_symbol, f = C2CP$gs_name)
+
+fgsea_result <- fgsea(C2CP_list, 
+                      survival.rank,
+                      nPermSimple = 10000)
+
+head(fgsea_result)
+```
+
+```{r}
+topPathwaysUp <- fgsea_result[ES > 0][head(order(pval), n=10), pathway]
+topPathwaysDown <- fgsea_result[ES < 0][head(order(pval), n=10), pathway]
+topPathways <- c(topPathwaysUp, rev(topPathwaysDown))
+
+plotGseaTable(C2CP_list[topPathways], survival.rank, fgsea_result, 
+              gseaParam = .5)
+```
